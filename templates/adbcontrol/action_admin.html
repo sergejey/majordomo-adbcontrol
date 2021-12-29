@@ -1,0 +1,119 @@
+[#if VIEW_MODE=""#]
+<div class="row" style="margin-right: -15px;margin-left: -15px;">
+    <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12">
+        <a href="#" onClick="$('#api_settings').toggle();return false;" class="btn btn-default"><#LANG_SETUP#></a>
+        <div style="display:none" id='api_settings'>
+            &nbsp;<div class="panel">
+             [#if VERSION!=""#]
+             <pre>[#VERSION#]</pre>
+             [#else#]
+             Make sure you have <b>adb</b> installed (<i>sudo apt-get install adb</i>).
+             [#endif#]
+            </div>
+                    <form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form">
+                <fieldset>
+                    <div class="form-group">
+                        <label class="control-label">
+                            Auto-restart ADB server (every seconds):
+                        </label>
+                        <input type="text" name="restart_adb" value="[#RESTART_ADB#]" class="form-control">
+                        <div class="help-block">(3600 by default)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label">
+                            Poll devices (every seconds):
+                        </label>
+                        <input type="text" name="poll_devices" value="[#POLL_DEVICES#]" class="form-control">
+                        <div class="help-block">(5 by default)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label">
+                            Save all operations to log-file:
+                        </label>
+                        <input type="radio" name="log_enabled" value="1" [#if LOG_ENABLED="1"#] checked[#endif#]> <#LANG_YES#>
+                        <input type="radio" name="log_enabled" value="0" [#if LOG_ENABLED!="1"#] checked[#endif#]> <#LANG_NO#>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" name="subm" value="Submit" class="btn btn-primary"><#LANG_UPDATE#></button>
+                        <input type="hidden" name="view_mode" value="update_settings">
+                        <input type="hidden" name="mode" value="update">
+                    </div>
+                </fieldset>
+            </form>
+            &nbsp;
+        </div>
+
+    </div>
+    <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12">
+            [#module name="xray" action="service" cycle="adbcontrol"#]
+    </div>
+</div>
+[#endif VIEW_MODE#]
+
+ <!-- action usual -->
+ [#if DATA_SOURCE="adbdevices" || DATA_SOURCE=""#]
+ <!-- table adbdevices search -->
+ [#if VIEW_MODE="search_adbdevices" || VIEW_MODE=""#]
+  [#inc adbdevices_search_admin.html#]
+ [#endif VIEW_MODE#]
+ <!-- / table adbdevices search -->
+ <!-- table adbdevices edit -->
+ [#if VIEW_MODE="edit_adbdevices"#]
+   [#if ID!=""#]
+<a href="?" class="btn btn-default"><i class="glyphicon glyphicon-arrow-left"></i> <#LANG_BACK#></a>
+   [#if TITLE!=""#]<h4>[#TITLE#]</h4>[#endif TITLE#]
+<ul class="nav nav-tabs">
+  <li[#if TAB=""#] class="active"[#endif#]>
+   <a href="?data_source=<#DATA_SOURCE#>&view_mode=<#VIEW_MODE#>&id=<#ID#>&tab="><#LANG_GENERAL#></a>
+  </li>
+  <li[#if TAB="data"#] class="active"[#endif#]>
+   <a href="?data_source=<#DATA_SOURCE#>&view_mode=<#VIEW_MODE#>&id=<#ID#>&tab=data"><#LANG_DATA#></a>
+  </li>
+    <li[#if TAB="ops"#] class="active"[#endif#]>
+    <a href="?data_source=<#DATA_SOURCE#>&view_mode=<#VIEW_MODE#>&id=<#ID#>&tab=ops"><#LANG_ACTIONS#></a>
+    </li>
+</ul>
+&nbsp;<br/>
+   [#endif ID#]
+   [#if TAB=""#]
+    [#inc adbdevices_edit_default.html#]
+   [#endif TAB#]
+   [#if TAB="data"#]
+    [#inc adbdevices_edit_data.html#]
+   [#endif TAB#]
+
+[#if TAB="ops"#]
+[#inc adbdevices_edit_ops.html#]
+[#endif TAB#]
+
+ [#endif VIEW_MODE#]
+ <!-- / table adbdevices edit -->
+ <!-- table adbdevices view --> 
+ [#if VIEW_MODE="view_adbdevices"#]
+   [#if TAB=""#]
+    [#inc adbdevices_view_default.html#]
+   [#endif TAB#]
+ [#endif VIEW_MODE#]
+ <!-- / table adbdevices view -->
+ [#endif DATA_SOURCE#]
+ <!-- action usual -->
+ [#if DATA_SOURCE="adbproperties"#]
+ <!-- table adbproperties search -->
+ [#if VIEW_MODE="search_adbproperties" || VIEW_MODE=""#]
+  [#inc adbproperties_search_admin.html#]
+ [#endif VIEW_MODE#]
+ <!-- / table adbproperties search -->
+ <!-- table adbproperties edit -->
+ [#if VIEW_MODE="edit_adbproperties"#]
+   [#inc adbproperties_edit.html#]
+ [#endif VIEW_MODE#]
+ <!-- / table adbproperties edit -->
+ <!-- table adbproperties view --> 
+ [#if VIEW_MODE="view_adbproperties"#]
+   [#inc adbproperties_view.html#]
+ [#endif VIEW_MODE#]
+ <!-- / table adbproperties view -->
+ [#endif DATA_SOURCE#]

@@ -1,0 +1,79 @@
+<div class="row">
+    <div class="col-md-5">
+        <h4>Run shell command</h4>
+        <form action="?" method="get" class="form">
+            <div class="form-group">
+             <input type="text" name="cmd" value="[#CMD#]" class="form-control" placeholder="Shell command">
+            </div>
+            <div class="form-group">
+             <input type="submit" name="submit" value="<#LANG_SEND#>" class="btn btn-default">
+            </div>
+            <div class="help-block small">
+                callAPI('/api/module/adbcontrol','GET',array('id'=>[#ID#], 'op'=>'shell','data'=>'[#if CMD!=""#][#CMD#][#else#]<i>Cmd</i>[#endif#]'));
+            </div>
+            <input type="hidden" name="id" value="<#ID#>">
+            <input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
+            <input type="hidden" name="tab" value="<#TAB#>">
+            <input type="hidden" name="op" value="shell">
+        </form>
+        <hr>
+        <h4>Send key-code</h4>
+        <form action="?" method="get" class="form">
+            <div class="form-group">
+                <input type="text" name="key" value="[#KEY#]" class="form-control" placeholder="Key code">
+            </div>
+            <div class="form-group">
+                <input type="submit" name="submit" value="<#LANG_SEND#>" class="btn btn-default">
+            </div>
+            <div class="help-block small">
+                callAPI('/api/module/adbcontrol','GET',array('id'=>[#ID#], 'op'=>'key','data'=>'[#if KEY!=""#][#KEY#][#else#]<i>Key</i>[#endif#]'));
+            </div>
+            <input type="hidden" name="id" value="<#ID#>">
+            <input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
+            <input type="hidden" name="tab" value="<#TAB#>">
+            <input type="hidden" name="op" value="key">
+        </form>
+        <hr>
+        <h4>Run activity</h4>
+        <form action="?" method="get" class="form">
+            <div class="form-group">
+                <input type="text" name="activity" value="[#ACTIVITY#]" class="form-control" placeholder="Package/Activity">
+            </div>
+            <div class="form-group">
+                <input type="submit" name="submit" value="<#LANG_SEND#>" class="btn btn-default">
+            </div>
+            <div class="help-block small">
+                callAPI('/api/module/adbcontrol','GET',array('id'=>[#ID#], 'op'=>'run','data'=>'[#if ACTIVITY!=""#][#ACTIVITY#][#else#]<i>Package/Activity</i>[#endif#]'));
+            </div>
+            <input type="hidden" name="id" value="<#ID#>">
+            <input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
+            <input type="hidden" name="tab" value="<#TAB#>">
+            <input type="hidden" name="op" value="run">
+        </form>
+        <hr>
+        <h4>Install APK</h4>
+        <form action="?" method="post" class="form" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" name="apk" class="form-control">
+            </div>
+            <div class="form-group">
+                <input type="submit" name="submit" value="<#LANG_SEND#>" class="btn btn-default">
+            </div>
+            <input type="hidden" name="id" value="<#ID#>">
+            <input type="hidden" name="view_mode" value="<#VIEW_MODE#>">
+            <input type="hidden" name="tab" value="<#TAB#>">
+            <input type="hidden" name="op" value="apk">
+        </form>
+        <hr>
+        <h4>Other</h4>
+        <a href="?id=[#ID#]&tab=<#TAB#>&view_mode=<#VIEW_MODE#>&op=processes" class="btn btn-default">Get list of processes</a>
+        <br/><br/>
+        <a href="?id=[#ID#]&tab=<#TAB#>&view_mode=<#VIEW_MODE#>&op=packages" class="btn btn-default">Get list of packages</a>
+        <hr>
+    </div>
+    <div class="col-md-7">
+        [#if OUTPUT!=""#]
+        <pre>[#OUTPUT#]</pre>
+        [#endif#]
+    </div>
+</div>
