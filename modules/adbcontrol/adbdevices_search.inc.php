@@ -25,6 +25,10 @@
    $total=count($res);
    for($i=0;$i<$total;$i++) {
     // some action for every record if required
+       $tm = strtotime($res[$i]['UPDATED']);
+       if ((time()-$tm)<60*60) {
+           $res[$i]['ONLINE'] = 1;
+       }
    }
    $out['RESULT']=$res;
   }

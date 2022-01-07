@@ -230,6 +230,7 @@ class adbcontrol extends module
     {
         $rec = SQLSelectOne("SELECT * FROM adbdevices WHERE ID='$id'");
         // some action for related tables
+        SQLExec("DELETE FROM adbproperties WHERE DEVICE_ID='" . $rec['ID'] . "'");
         SQLExec("DELETE FROM adbdevices WHERE ID='" . $rec['ID'] . "'");
     }
 
@@ -249,23 +250,36 @@ class adbcontrol extends module
         if (!$device['ID']) return;
         $ip = $device['IP'];
 
-        $res = $this->adbCommand($ip, 'connect ' . $ip);
+        $res = $this->adbCommand($ip, 'connect ' . $ip, 1);
         if (!preg_match('/connected/', $res)) return false;
+
+        $device_updated = 0;
 
         $currentWindow = $this->getCurrentWindow($ip);
         if ($currentWindow != '') {
             $this->updateProperty($id, 'currentWindow', $currentWindow);
+            $device_updated = 1;
         }
 
-        $this->updateProperty($id, 'uptime', $this->getUptime($ip));
+        $uptime = $this->getUptime($ip);
+        if ($uptime) {
+            $device_updated = 1;
+            $this->updateProperty($id, 'uptime', $uptime);
+        }
+
 
         $info = $this->getBatteryInfo($ip);
         foreach($info as $k=>$v) {
             $this->updateProperty($id, $k, $v);
+            $device_updated = 1;
         }
 
         $this->updateProperty($id, 'keyCode');
         $this->updateProperty($id, 'runActivity');
+
+        if ($device_updated) {
+            SQLExec("UPDATE adbdevices SET UPDATED='".date('Y-m-d H:i:s')."' WHERE ID=".(int)$id);
+        }
 
 
     }
@@ -482,6 +496,7 @@ class adbcontrol extends module
  adbdevices: ID int(10) unsigned NOT NULL auto_increment
  adbdevices: TITLE varchar(100) NOT NULL DEFAULT ''
  adbdevices: IP varchar(100) NOT NULL DEFAULT ''
+ adbdevices: UPDATED datetime
  
  adbproperties: ID int(10) unsigned NOT NULL auto_increment
  adbproperties: TITLE varchar(100) NOT NULL DEFAULT ''

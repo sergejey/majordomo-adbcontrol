@@ -29,6 +29,7 @@
   <th>ID</th>
   <th><#LANG_DEVICE#></th>
   <th>IP</th>
+  <th><#LANG_UPDATED#></th>
   <th>&nbsp;</th>
  </tr>
  </thead>
@@ -41,6 +42,9 @@
  </td>
  <td>
   [#IP#]
+ </td>
+ <td>[#UPDATED#]
+  [#if ONLINE="1"#]<font color="green">ONLINE</font>[#else#]<font color="red">OFFLINE</font>[#endif#]
  </td>
  <td width="1%" nowrap>
   <div>
