@@ -13,8 +13,11 @@ include_once(DIR_MODULES . 'adbcontrol/adbcontrol.class.php');
 $adbcontrol_module = new adbcontrol();
 $adbcontrol_module->getConfig();
 $tmp = SQLSelectOne("SELECT ID FROM adbdevices LIMIT 1");
-if (!$tmp['ID'])
-   exit; // no devices added -- no need to run this cycle
+if (!$tmp['ID']) {
+    echo "No devices added";
+    exit; // no devices added -- no need to run this cycle
+}
+
 echo date("H:i:s") . " running " . basename(__FILE__) . PHP_EOL;
 
 $checkEvery=(int)$adbcontrol_module->config['POLL_DEVICES'];
@@ -27,7 +30,7 @@ $restartEvery = (int)$adbcontrol_module->config['RESTART_ADB'];
 if (!$restartEvery) {
     $restartEvery = 60*60;
 }
-$latest_restart = time();
+$latest_restart = 0;
 
 while (1)
 {

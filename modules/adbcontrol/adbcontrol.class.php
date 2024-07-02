@@ -134,19 +134,19 @@ class adbcontrol extends module
 
         $out['RESTART_ADB'] = (int)$this->config['RESTART_ADB'];
         if (!$out['RESTART_ADB']) {
-            $out['RESTART_ADB'] = 60*60;
+            $out['RESTART_ADB'] = 60 * 60;
         }
         $out['POLL_DEVICES'] = (int)$this->config['POLL_DEVICES'];
         if (!$out['POLL_DEVICES']) {
-            $out['POLL_DEVICES']=5;
+            $out['POLL_DEVICES'] = 5;
         }
         $out['LOG_ENABLED'] = (int)$this->config['LOG_ENABLED'];
 
         if ($this->view_mode == 'update_settings') {
 
-            $this->config['RESTART_ADB'] = gr('restart_adb','int');
-            $this->config['POLL_DEVICES'] = gr('poll_devices','int');
-            $this->config['LOG_ENABLED'] = gr('log_enabled','int');
+            $this->config['RESTART_ADB'] = gr('restart_adb', 'int');
+            $this->config['POLL_DEVICES'] = gr('poll_devices', 'int');
+            $this->config['LOG_ENABLED'] = gr('log_enabled', 'int');
             $this->saveConfig();
 
             $service = 'cycle_adbcontrol';
@@ -161,8 +161,8 @@ class adbcontrol extends module
         if ($this->data_source == 'adbdevices' || $this->data_source == '') {
             if ($this->view_mode == '' || $this->view_mode == 'search_adbdevices') {
 
-                exec('adb --version',$result);
-                $version = implode('',$result);
+                exec('adb --version', $result);
+                $version = implode('', $result);
                 //$version = $this->adbCommand('', '--version');
                 $out['VERSION'] = $version;
 
@@ -244,32 +244,32 @@ class adbcontrol extends module
         require(dirname(__FILE__) . '/adbproperties_search.inc.php');
     }
 
-    function refreshDevice($id)
+    function refreshDevice($id, $ignore_log = 0)
     {
         $device = SQLSelectOne("SELECT * FROM adbdevices WHERE ID=" . (int)$id);
         if (!$device['ID']) return;
         $ip = $device['IP'];
 
-        $res = $this->adbCommand($ip, 'connect ' . $ip, 1);
+        $res = $this->execCmd('adb connect ' . $ip . ':5555', $ignore_log);
         if (!preg_match('/connected/', $res)) return false;
 
         $device_updated = 0;
 
-        $currentWindow = $this->getCurrentWindow($ip);
+        $currentWindow = $this->getCurrentWindow($ip, $ignore_log);
         if ($currentWindow != '') {
             $this->updateProperty($id, 'currentWindow', $currentWindow);
             $device_updated = 1;
         }
 
-        $uptime = $this->getUptime($ip);
+        $uptime = $this->getUptime($ip, $ignore_log);
         if ($uptime) {
             $device_updated = 1;
             $this->updateProperty($id, 'uptime', $uptime);
         }
 
 
-        $info = $this->getBatteryInfo($ip);
-        foreach($info as $k=>$v) {
+        $info = $this->getBatteryInfo($ip, $ignore_log);
+        foreach ($info as $k => $v) {
             $this->updateProperty($id, $k, $v);
             $device_updated = 1;
         }
@@ -278,7 +278,7 @@ class adbcontrol extends module
         $this->updateProperty($id, 'runActivity');
 
         if ($device_updated) {
-            SQLExec("UPDATE adbdevices SET UPDATED='".date('Y-m-d H:i:s')."' WHERE ID=".(int)$id);
+            SQLExec("UPDATE adbdevices SET UPDATED='" . date('Y-m-d H:i:s') . "' WHERE ID=" . (int)$id);
         }
 
 
@@ -290,13 +290,13 @@ class adbcontrol extends module
         $rec['DEVICE_ID'] = $device_id;
         $rec['TITLE'] = $title;
 
-        if ($value=='[undefined]') {
+        if ($value == '[undefined]') {
             $value = $rec['VALUE'];
         }
 
         if ($rec['VALUE'] != $value || !$rec['ID']) {
-            $rec['VALUE'] = $value;
             $rec['UPDATED'] = date('Y-m-d H:i:s');
+            $rec['VALUE'] = $value;
             if ($rec['LINKED_OBJECT'] != '' && $rec['LINKED_PROPERTY'] != '') {
                 sg($rec['LINKED_OBJECT'] . '.' . $rec['LINKED_PROPERTY'], $value, array('adbcontrol' => '0'));
             }
@@ -311,34 +311,55 @@ class adbcontrol extends module
         }
     }
 
-    function getBatteryInfo($ip) {
+    function getBatteryInfo($ip, $ignore_log = 0)
+    {
         $info = array();
-        $res = $this->adbCommand($ip, 'shell dumpsys battery', 1);
+        $res = $this->adbCommand($ip, 'shell dumpsys battery', $ignore_log);
 
-        if (preg_match('/level: (\d+)/is',$res,$m)) {
-            $info['battery_level']=$m[1];
+        if (preg_match('/level: (\d+)/is', $res, $m)) {
+            $info['battery_level'] = $m[1];
         }
-        if (preg_match('/AC powered: (\w+)/is',$res,$m)) {
-            if ($m[1]=='true') {
-                $info['ac_powered']=1;
+        if (preg_match('/Charge counter: (\d+)/is', $res, $m)) {
+            $info['charge_counter'] = $m[1];
+        }
+        if (preg_match('/AC powered: (\w+)/is', $res, $m)) {
+            if ($m[1] == 'true') {
+                $info['ac_powered'] = 1;
             } else {
-                $info['ac_powered']=0;
+                $info['ac_powered'] = 0;
+            }
+        }
+        if (preg_match('/USB powered: (\w+)/is', $res, $m)) {
+            if ($m[1] == 'true') {
+                $info['usb_powered'] = 1;
+            } else {
+                $info['usb_powered'] = 0;
+            }
+        }
+        if (preg_match('/Wireless powered: (\w+)/is', $res, $m)) {
+            if ($m[1] == 'true') {
+                $info['wireless_powered'] = 1;
+            } else {
+                $info['wireless_powered'] = 0;
             }
         }
         return $info;
     }
 
-    function getUptime($ip) {
-        $res = $this->adbCommand($ip,'shell uptime', 1);
-        if (preg_match('/up time: ([\d:]+)/is',$res,$m)) {
+    function getUptime($ip, $ignore_log = 0)
+    {
+        $res = $this->adbCommand($ip, 'shell uptime', $ignore_log);
+        if (preg_match('/up time: ([\d:]+)/is', $res, $m)) {
+            return $m[1];
+        } elseif (preg_match('/up (.+?),/is', $res, $m)) {
             return $m[1];
         }
         return '';
     }
 
-    function getCurrentWindow($ip)
+    function getCurrentWindow($ip, $ignore_log = 0)
     {
-        $res = $this->adbCommand($ip, 'shell dumpsys window windows | grep -E \'mCurrentFocus|mFocusedApp\'', 1);
+        $res = $this->adbCommand($ip, 'shell dumpsys window windows | grep -E \'mCurrentFocus|mFocusedApp\'', $ignore_log);
         $title = '';
         if (preg_match('/mCurrentFocus=(.+)$/i', $res, $m)) {
             $title = $m[1];
@@ -354,42 +375,38 @@ class adbcontrol extends module
 
     }
 
-    function adbCommand($ip, $cmd, $ignore_log = 0)
+    function execCmd($cmd_line, $ignore_log = 0)
     {
-        $output = array();
-        exec('adb connect ' . $ip, $output, $code);
-
+        if ($this->config['LOG_ENABLED'] && !$ignore_log) {
+            debmes($cmd_line, 'adbcontrol');
+        }
         $output = array();
         $code = 0;
-
-        exec('adb -s ' . $ip . ' ' . $cmd . ' 2>&1', $output, $code);
+        exec($cmd_line, $output, $code);
         $output_text = implode("\n", $output);
-        if ($code && preg_match('/error: closed/',$output_text)) {
-            debmes('Restarting adb: adb kill-server','adbcontrol');
-            exec('adb kill-server');
-            sleep(1);
-            exec('adb connect ' . $ip, $output, $code);
-            $output = array();
-            $code = 0;
-            exec('adb -s ' . $ip . ' ' . $cmd . ' 2>&1', $output, $code);
-            $output_text = implode("\n", $output);
-        }
-
         if ($this->config['LOG_ENABLED'] && !$ignore_log) {
-            debmes('adb -s ' . $ip . ' ' . $cmd,'adbcontrol');
-            debmes('Code ' . $code . ': ' . $output_text,'adbcontrol');
+            debmes('Result: ' . $output_text, 'adbcontrol');
         }
-        if (!$code) {
-            $result = implode("\n", $output);
-        } else {
-            $result = '';
-        }
+        return $output_text;
+    }
 
+    function adbCommand($ip, $cmd, $ignore_log = 0)
+    {
+        $this->execCmd('adb connect ' . $ip . ":5555", $ignore_log);
+        $result = $this->execCmd('adb -s ' . $ip . ' ' . $cmd . ' 2>&1', $ignore_log);
+        if (preg_match('/error: closed/', $result)) {
+            debmes('Restarting adb: adb kill-server', 'adbcontrol');
+            $this->execCmd('adb kill-server', $ignore_log);
+            sleep(1);
+            $this->execCmd('adb connect ' . $ip . ":5555");
+            $result = exec('adb -s ' . $ip . ' ' . $cmd . ' 2>&1');
+        }
         return $result;
     }
 
-    function restartAdb() {
-        exec('adb kill-server');
+    function restartAdb()
+    {
+        $this->execCmd('adb kill-server');
     }
 
     /**
@@ -402,24 +419,24 @@ class adbcontrol extends module
         require(dirname(__FILE__) . '/adbproperties_edit.inc.php');
     }
 
-    function api($params) {
+    function api($params)
+    {
 
 
-        $rec = SQLSelectOne("SELECT * FROM adbdevices WHERE ID=".(int)$_REQUEST['id']);
+        $rec = SQLSelectOne("SELECT * FROM adbdevices WHERE ID=" . (int)$_REQUEST['id']);
 
         if (!$rec['ID']) return;
 
 
-
         $result = '';
-        if ($_REQUEST['op']=='shell') {
-            $result = $this->adbCommand($rec['IP'],'shell ' . $_REQUEST['data']);
+        if ($_REQUEST['op'] == 'shell') {
+            $result = $this->adbCommand($rec['IP'], 'shell ' . $_REQUEST['data']);
         }
-        if ($_REQUEST['op']=='key') {
-            $result = $this->adbCommand($rec['IP'],'shell input keyevent ' . $_REQUEST['data']);
+        if ($_REQUEST['op'] == 'key') {
+            $result = $this->adbCommand($rec['IP'], 'shell input keyevent ' . $_REQUEST['data']);
         }
-        if ($_REQUEST['op']=='run') {
-            $result = $this->adbCommand($rec['IP'],'shell am start -n ' . $_REQUEST['data']);
+        if ($_REQUEST['op'] == 'run') {
+            $result = $this->adbCommand($rec['IP'], 'shell am start -n ' . $_REQUEST['data']);
         }
         return $result;
     }
@@ -431,12 +448,12 @@ class adbcontrol extends module
         $total = count($properties);
         if ($total) {
             for ($i = 0; $i < $total; $i++) {
-                SQLExec("UPDATE adbproperties SET VALUE='".DBSafe($value)."', UPDATED='".date('Y-m-d H:i:s')."' WHERE ID=".$properties[$i]['ID']);
-                if ($properties[$i]['TITLE']=='keyCode') {
-                    $res = $this->adbCommand($properties[$i]['IP'],'shell input keyevent ' . $value);
+                SQLExec("UPDATE adbproperties SET VALUE='" . DBSafe($value) . "', UPDATED='" . date('Y-m-d H:i:s') . "' WHERE ID=" . $properties[$i]['ID']);
+                if ($properties[$i]['TITLE'] == 'keyCode') {
+                    $res = $this->adbCommand($properties[$i]['IP'], 'shell input keyevent ' . $value);
                 }
-                if ($properties[$i]['TITLE']=='runActivity') {
-                    $res = $this->adbCommand($properties[$i]['IP'],'shell am start -n ' . $value);
+                if ($properties[$i]['TITLE'] == 'runActivity') {
+                    $res = $this->adbCommand($properties[$i]['IP'], 'shell am start -n ' . $value);
                 }
             }
         }
@@ -445,10 +462,10 @@ class adbcontrol extends module
     function processCycle()
     {
         $this->getConfig();
-        $devices=SQLSelect("SELECT ID FROM adbdevices");
+        $devices = SQLSelect("SELECT ID FROM adbdevices");
         $total = count($devices);
-        for($i=0;$i<$total;$i++) {
-            $this->refreshDevice($devices[$i]['ID']);
+        for ($i = 0; $i < $total; $i++) {
+            $this->refreshDevice($devices[$i]['ID'], 1);
         }
 
     }

@@ -73,10 +73,17 @@ if ($this->mode == 'update') {
         if ($rec['ID']) {
             SQLUpdate($table_name, $rec); // update
         } else {
+            $devices_before = (int)current(SQLSelectOne("SELECT COUNT(*) as TOTAL FROM $table_name"));
             $new_rec = 1;
             $rec['ID'] = SQLInsert($table_name, $rec); // adding new record
+            if ($devices_before == 0) {
+                $service = 'adbcontrol';
+                sg($service . 'Run', '');
+                sg($service . 'Control', 'restart');
+            }
         }
         $this->refreshDevice($rec['ID']);
+        $this->redirect("?view_mode=".$this->view_mode."&id=".$rec['ID']."&tab=data");
         $out['OK'] = 1;
     } else {
         $out['ERR'] = 1;
